@@ -4,6 +4,7 @@ package br.com.infomind.snakedroid;
 import android.content.Context;
 import android.media.MediaPlayer;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,13 +13,16 @@ import android.view.View;
 import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.support.design.widget.Snackbar;
 
 import java.util.ArrayList;
 import java.util.Random;
 
 
 public class GameBoard extends AppCompatActivity {
+    GridLayout layout;
     MediaPlayer mpBG1;
+    private int fruta, ndiamantes=1;
     public final static String erros = "ErrosSnake";
     private boolean running=true;
     TextView tv;
@@ -33,7 +37,7 @@ public class GameBoard extends AppCompatActivity {
     int statusFruta=0; //0-sem fruta na tabela   1-fruta existente na tabela
     int frutaX;
     int frutaY;
-    int segundos=400;
+    int segundos=600;
     public int getDirectionActive(){return directionActive;}
     public int getSegundos() {
         return segundos;
@@ -46,12 +50,15 @@ public class GameBoard extends AppCompatActivity {
         getSupportActionBar().hide(); //aqui a mágica
         setContentView(R.layout.activity_game_board);
 
+        mp = MediaPlayer.create(this, R.raw.mordida);
+        mp.setLooping(false);
+
         mpBG1 = MediaPlayer.create(this, R.raw.cobrabg1);
         n = 22; //grande
 
         atualizacaoDePontos();
 
-        GridLayout layout = (GridLayout) findViewById(R.id.grid);
+       layout = (GridLayout) findViewById(R.id.grid);
         this.table = new ImageView[n][n];
 
         int cont=0;
@@ -80,6 +87,7 @@ public class GameBoard extends AppCompatActivity {
     }
 
     public void clickControl(View v){
+        vibrar();
         ImageView img;
         img = (ImageView) v;
 
@@ -207,6 +215,7 @@ public class GameBoard extends AppCompatActivity {
 
             snakeEat(x,y);
             snakeMove(getDirectionActive());
+
             snake.get(0)[0] = x;
             snake.get(0)[1] = y;
             snake.get(0)[2]=getDirectionActive();
@@ -225,45 +234,55 @@ public class GameBoard extends AppCompatActivity {
                     table[snake.get(0)[0]][snake.get(0)[1]].setRotation(90);
                     break;
             }
+
+
             table[snake.get(0)[0]][snake.get(0)[1]].setImageResource(R.drawable.cabeca);
-            if (!snakeDies(x, y)){
-                MediaPlayer mp3 = MediaPlayer.create(this, R.raw.cobramorte);
-                mp3.setLooping(true);
-                mp3.start();
-                mpBG1.stop();
-                running=false;
-            }
+            if (!snakeDies(x, y)) return;
             if(this.statusFruta==0){generateFruit();}
-
-
-
 
 
     }
 
     public boolean snakeDies(int x, int y){
-        boolean retorno=true;
+        boolean fg=true;
         for(int i=snake.size()-1;i>0;i--) {
             if(x==snake.get(i)[0] && y==snake.get(i)[1]){
-                //Cobra morreu
-                retorno= false;
+                MediaPlayer mp3 = MediaPlayer.create(this, R.raw.cobramorte);
+                mp3.setLooping(true);
+                mp3.start();
+                mpBG1.stop();
+                fg=false;
+                running=false;
+                break;
             }
         }
-        return retorno;
-
+        return fg;
     }
 
     public void snakeEat(int x, int y){
         if (x == this.frutaX && y == this.frutaY) {
-            mp = MediaPlayer.create(this, R.raw.mordida);
-            mp.setLooping(false);
             mp.start();
+            Log.i("ErrosSnake", "comeu fruta");
             this.statusFruta = 0;
             this.pontos += 50;
-            if (this.segundos > 100) this.segundos -= 40;
+            if (this.segundos > 300){
+                this.segundos -= 50;
+            }else if (this.segundos > 80 && this.segundos <= 300){
+               this.segundos -= 20;
+            }
             atualizacaoDePontos();
+                if (fruta == 3) {
+                    segundos = 450;
+                }
             snake.add(new int[]{0, 0, 0});
         }
+    }
+
+    private void vibrar()
+    {
+        Vibrator rr = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        long milliseconds = 30;//'30' é o tempo em milissegundos, é basicamente o tempo de duração da vibração. portanto, quanto maior este numero, mais tempo de vibração você irá ter
+        rr.vibrate(milliseconds);
     }
 
     public void snakeMove(int a){
@@ -292,14 +311,13 @@ public class GameBoard extends AppCompatActivity {
             for(int i=0;i<snake.size();i++){
                 if(frutaX == snake.get(i)[0] && frutaY==snake.get(i)[1]){
                    this.flag=true;
-                    Log.i("ErrosSnake", "Posicao da cobra");
                     break;
                 }
             }
         }while(this.flag);
         Random r = new Random();
-        int fruta=0;
-        fruta = 0 + r.nextInt(3);
+        fruta=0;
+        fruta = 0 + r.nextInt(4);
         switch(fruta){
             case 0:
                 this.table[this.frutaX][this.frutaY].setImageResource(R.drawable.fruta1);
@@ -309,6 +327,17 @@ public class GameBoard extends AppCompatActivity {
                 break;
             case 2:
                 this.table[this.frutaX][this.frutaY].setImageResource(R.drawable.fruta2);
+                break;
+            case 3:
+                if(pontos>1000*ndiamantes) {
+                    this.table[this.frutaX][this.frutaY].setImageResource(R.drawable.diamante);
+                    Snackbar snack = Snackbar.make((View) layout.getParent(),R.string.diamante, Snackbar.LENGTH_LONG);
+                    snack.show();
+                    ndiamantes++;
+                }else{
+                    this.table[this.frutaX][this.frutaY].setImageResource(R.drawable.fruta2);
+                    fruta=2;
+                }
                 break;
         }
 

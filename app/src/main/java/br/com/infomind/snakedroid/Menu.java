@@ -7,7 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 public class Menu extends AppCompatActivity {
-
+    MediaPlayer mpBG;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -15,7 +15,8 @@ public class Menu extends AppCompatActivity {
         getSupportActionBar().hide(); //aqui a mágica
         setContentView(R.layout.activity_menu);
 
-        MediaPlayer mpBG = MediaPlayer.create(this, R.raw.cobrabg);
+        mpBG = MediaPlayer.create(this, R.raw.cobrabg);
+
         mpBG.setLooping(true);
         mpBG.start();
 
@@ -26,6 +27,7 @@ public class Menu extends AppCompatActivity {
     public void clickControl(View v){
 
         startActivity(new Intent(this,GameBoard.class));
+        mpBG.stop();
         //finish();
 
 
